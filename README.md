@@ -200,7 +200,7 @@ One last thing worth noting is that hosting these combined SVGs on GitHub is a
 bit of a pain. Merely checking them into a repository and trying to include them
 in markdown won't work, because GitHub appears to be doing some SVG script tag
 sanitising for security reasons. Uploading them to gh-pages and linking to those
-seems to work though[^1:].
+seems to work though[^1].
 
 ## Contributing
 
