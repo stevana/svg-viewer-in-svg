@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+
+name=$(basename "$0")
+
+for file in "$@"; do
+  if [ "${file: -4}" != ".svg" ]; then
+      echo "$name: $file doesn't have .svg suffix"
+      exit 1
+  fi
+done
+
+cat <<EOF
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg">
+
+<g font-family="Times,serif" font-size="14.00">
+<text id="first"    x="20"  y="30">⇤</text>
+<text id="previous" x="50"  y="30">←</text>
+<text id="progress" x="80"  y="30"></text>
+<text id="next"     x="120" y="30">→</text>
+<text id="last"     x="150" y="30">⇥</text>
+</g>
+
+<g id="image"></g>
+
+<desc id="0">Counter used to keep track of the index.</desc>
+
+<script type="text/ecmascript">
+  // <![CDATA[
+  const imgs = new Array(
+EOF
+
+for file in "$@"; do
+  echo -n "    '"
+  # Remove any text that comes before the svg tag, position the SVG slightly
+  # down the y-axis to make room for the navigation buttons, and finally remove
+  # all newlines.
+  sed -z -e 's/^.*<svg/<svg y="50"/' -e 's/\n//g' "$file"
+  echo "',"
+done
+
+cat <<EOF
+    );
+
+    function registerClick(selector, f) {
+        document.querySelector(selector).addEventListener("click", (e) => {
+            f(e);
+        });
+    }
+
+    function setCounter(f) {
+        const counter = document.querySelector("desc");
+        counter.id = f(parseInt(counter.id));
+        return counter.id;
+    }
+
+    function setImage(i) {
+        const img = document.querySelector("#image");
+        img.innerHTML = imgs[i];
+        updateProgress();
+    }
+
+    function updateProgress() {
+        document.querySelector("#progress").innerHTML =
+            document.querySelector("desc").id + "/" + (imgs.length - 1);
+    }
+
+    function first() {
+        setImage(setCounter((_) => 0));
+    }
+
+    function previous() {
+        setImage(setCounter((i) => i <= 0 ? 0 : --i));
+    }
+
+    function next() {
+        setImage(setCounter((i) => i >= imgs.length - 1 ? imgs.length - 1 : ++i));
+    }
+
+    function last() {
+        setImage(setCounter((_) => imgs.length - 1));
+    }
+
+    registerClick("#first",    (_) => first());
+    registerClick("#next",     (_) => next());
+    registerClick("#previous", (_) => previous());
+    registerClick("#last",     (_) => last());
+    setImage(0);
+
+    window.addEventListener("keydown", (e) => {
+        e.preventDefault();
+        // https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event
+        if (e.isComposing || e.keyCode === 229) {
+            return;
+        }
+        // Left arrow or k.
+        else if (e.keyCode === 37 || e.keyCode === 75) {
+            previous();
+        }
+        // Right arrow or j.
+        else if (e.keyCode === 39 || e.keyCode === 74) {
+            next();
+        }
+    });
+
+  // ]]>
+  </script>
+</svg>
+EOF
